@@ -11,6 +11,11 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
+    "paths": {
+      "page-builder": [
+        "./dist/page-builder"
+      ]
+    },
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve"
@@ -21,5 +26,16 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/public-site/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/page-builder/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/page-builder/tsconfig.spec.json"
+    }
+  ]
 }

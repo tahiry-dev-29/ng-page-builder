@@ -45,3 +45,51 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+
+```text
+.
+├── projects
+│   ├── page-builder            # 🛠️ LIBRAIRIE : L'OUTIL RÉUTILISABLE
+│   │   └── src
+│   │       └── lib
+│   │           ├── core/
+│   │           │   ├── block-interface.ts 2026        # Le contrat de données
+│   │           │   └── style-util.ts 2026             # Fonctions utilitaires (CSS/Tailwind mapping)
+│   │           ├── renderer/
+│   │           │   └── block-renderer-component.ts 2026 # Le moteur récursif
+│   │           └── widgets/
+│   │               ├── selection-wrapper-component.ts 2026 # Micro-composant pour Drag & Sélection
+│   │               ├── container-widget-component.ts 2026
+│   │               └── text-widget-component.ts 2026
+│   │
+│   ├── builder-admin           # 💻 APPLICATION ADMIN : L'INTERFACE D'ÉDITION
+│   │   └── src
+│   │       └── app
+│   │           ├── services/
+│   │           │   ├── local-storage-resource.ts 2026 # La logique Resource/Promise/LocalStorage
+│   │           │   └── builder-state-service.ts 2026  # L'état central (Blocks, SelectedId, Undo)
+│   │           ├── features/
+│   │           │   ├── editor/
+│   │           │   │   └── editor-sidebar/
+│   │           │   │       ├── editor-sidebar-component.ts 2026 # Le Shell de la Sidebar
+│   │           │   │       └── controls/
+│   │           │   │           ├── spacing-controls-component.ts 2026 # Micro-composant Padding/Margin
+│   │           │   │           └── typography-controls-component.ts 2026 # Micro-composant Font/Color
+│   │           │   │   └── editor-routes.ts 2026
+│   │           │   └── layout/
+│   │           │       └── editor-layout-component.ts 2026 # Le conteneur (Canvas + Sidebar)
+│   │           └── app-routes.ts 2026
+│   │
+│   ├── public-site             # 🌐 APPLICATION PUBLIQUE : LE CONSOMMATEUR
+│   │   └── src
+│   │       └── app
+│   │           ├── services/
+│   │           │   └── page-data-resource.ts 2026 # Resource/Promise pour la lecture
+│   │           ├── features/
+│   │           │   ├── layout/
+│   │           │   │   └── main-layout-component.ts 2026
+│   │           │   └── page-viewer/
+│   │           │       └── page-viewer-component.ts 2026 # Catch-All Route
+│   │           └── app-routes.ts 2026 # Avec le 'path: "**"'
+```

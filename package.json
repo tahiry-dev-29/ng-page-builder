@@ -4,11 +4,22 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:public-site": "ng serve public-site --port 4201",
+    "start:admin": "ng serve admin --port 4200",
+    "start:all": "npm run start:admin & npm run start:public-site",
     "build": "ng build",
+    "build:public-site": "ng build public-site",
+    "build:admin": "ng build admin",
+    "build:all": "npm run build:admin & npm run build:public-site",
     "watch": "ng build --watch --configuration development",
+    "watch:public-site": "ng build --watch --configuration development --project public-site",
+    "watch:admin": "ng build --watch --configuration development --project admin",
+    "watch:all": "npm run watch:admin & npm run watch:public-site",
     "test": "ng test",
     "serve:ssr:page-builder": "node dist/page-builder/server/server.mjs",
-    "serve:ssr:public-site": "node dist/public-site/server/server.mjs"
+    "serve:ssr:public-site": "node dist/public-site/server/server.mjs",
+    "serve:ssr:builder-admin": "node dist/builder-admin/server/server.mjs",
+    "serve:ssr:admin": "node dist/admin/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -25,6 +36,7 @@
   "private": true,
   "packageManager": "pnpm@10.22.0",
   "dependencies": {
+    "@angular/cdk": "^21.0.1",
     "@angular/common": "^21.0.0",
     "@angular/compiler": "^21.0.0",
     "@angular/core": "^21.0.0",

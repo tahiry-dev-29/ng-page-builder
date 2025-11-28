@@ -1,18 +1,47 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { BlockRendererComponent, Block } from 'page-builder';
 
 @Component({
   selector: 'app-page-viewer',
   standalone: true,
-  imports: [],
+  imports: [BlockRendererComponent],
   template: `
-    <div class="container mx-auto p-4">
-      <h2 class="text-2xl font-bold mb-4">Page Viewer</h2>
-      <p>Content for page: {{ slug() }}</p>
+    <div class="page-viewer">
+      @for (block of blocks(); track block.id) {
+        <pb-block-renderer [block]="block" />
+      }
     </div>
   `,
-  styles: ``,
+  styles: `
+    .page-viewer {
+      width: 100%;
+      min-height: 100vh;
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageViewerComponent {
-    slug = input<string>();
+  // TODO: Load blocks from page-data-resource
+  blocks = signal<Block[]>([
+    {
+      id: '1',
+      type: 'container',
+      styles: {
+        padding: '20px',
+        backgroundColor: '#f5f5f5'
+      },
+      children: [
+        {
+          id: '2',
+          type: 'text',
+          content: {
+            text: '<h1>Welcome to Public Site</h1><p>This page is rendered using the page-builder library!</p>'
+          },
+          styles: {
+            color: '#333'
+          }
+        }
+      ]
+    }
+  ]);
 }

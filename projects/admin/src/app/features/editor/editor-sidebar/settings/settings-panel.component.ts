@@ -36,7 +36,7 @@ import { StyleSettingsComponent } from './tabs/style-settings.component';
           (click)="activeTab.set('layout')"
         >
           <span class="material-symbols-outlined text-base">grid_view</span>
-          <span>Mise en page</span>
+          <span>{{ widgetType() === 'layout' ? 'Mise en page' : 'Contenu' }}</span>
         </button>
         <button 
           class="flex-1 py-3 text-xs font-medium border-b-2 transition-colors flex items-center justify-center gap-1"
@@ -63,11 +63,11 @@ import { StyleSettingsComponent } from './tabs/style-settings.component';
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 min-h-0">
         @if (activeTab() === 'layout') {
-          <app-layout-settings />
+          <app-layout-settings [widgetType]="widgetType()" />
         } @else if (activeTab() === 'style') {
-          <app-style-settings />
+          <app-style-settings [widgetType]="widgetType()" />
         } @else if (activeTab() === 'advanced') {
           <app-advanced-settings [widgetType]="widgetType()" />
         }
@@ -83,7 +83,7 @@ import { StyleSettingsComponent } from './tabs/style-settings.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SettingsPanelComponent {
-  widgetType = input<'layout' | 'basic'>('layout');
+  widgetType = input<string>('layout');
   widgetLabel = input<string>('');
   
   activeTab = signal<'layout' | 'style' | 'advanced'>('layout');

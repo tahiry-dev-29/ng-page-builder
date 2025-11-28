@@ -87,7 +87,7 @@ export interface GridContent {
  */
 export interface Block {
   id: string;
-  type: 'container' | 'grid' | 'text' | 'image' | 'video' | 'button' | 'separator' | 'spacer' | 'map';
+  type: 'container' | 'grid' | 'text' | 'image' | 'video' | 'button' | 'separator' | 'spacer' | 'map' | 'icon-list';
   label?: string;
   styles?: BlockStyles;
   content?: TextContent | ImageContent | GridContent | any;

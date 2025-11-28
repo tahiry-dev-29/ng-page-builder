@@ -13,25 +13,32 @@ export type Unit = 'px' | '%' | 'em' | 'rem' | 'vh' | 'vw';
           @if (showDeviceSelector()) {
             <span class="material-symbols-outlined text-gray-400 text-sm">desktop_windows</span>
           }
-          <div class="relative">
+          <div class="relative group">
             <button 
-              class="flex items-center gap-1 text-xs text-gray-600 hover:bg-gray-100 px-2 py-1 rounded"
+              class="flex items-center gap-0.5 text-[10px] uppercase font-medium text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
               (click)="unitMenuOpen.set(!unitMenuOpen())"
             >
               <span>{{ selectedUnit() }}</span>
-              <span class="material-symbols-outlined text-xs">expand_more</span>
+              <span class="material-symbols-outlined text-[10px] transition-transform" [class.rotate-180]="unitMenuOpen()">expand_more</span>
             </button>
             
             @if (unitMenuOpen()) {
-              <div class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 min-w-[60px]">
+              <!-- Backdrop to close menu when clicking outside -->
+              <div class="fixed inset-0 z-10" (click)="unitMenuOpen.set(false)"></div>
+              
+              <div class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 min-w-[80px] py-1">
                 @for (unit of availableUnits(); track unit) {
                   <button
-                    class="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                    class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors flex items-center justify-between group/item"
                     [class.bg-blue-50]="selectedUnit() === unit"
                     [class.text-blue-600]="selectedUnit() === unit"
+                    [class.text-gray-600]="selectedUnit() !== unit"
                     (click)="selectUnit(unit)"
                   >
-                    {{ unit }}
+                    <span>{{ unit }}</span>
+                    @if (selectedUnit() === unit) {
+                      <span class="material-symbols-outlined text-[10px]">check</span>
+                    }
                   </button>
                 }
               </div>

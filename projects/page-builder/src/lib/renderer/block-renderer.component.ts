@@ -3,6 +3,8 @@ import { Block } from '../core/block.interface';
 import { ContainerWidgetComponent } from '../widgets/container-widget.component';
 import { TextWidgetComponent } from '../widgets/text-widget.component';
 import { ImageWidgetComponent } from '../widgets/image-widget.component';
+import { IconListWidgetComponent } from '../widgets/icon-list-widget.component';
+import { ButtonWidgetComponent } from '../widgets/button-widget.component';
 
 @Component({
   selector: 'pb-block-renderer',
@@ -10,7 +12,9 @@ import { ImageWidgetComponent } from '../widgets/image-widget.component';
   imports: [
     ContainerWidgetComponent,
     TextWidgetComponent,
-    ImageWidgetComponent
+    ImageWidgetComponent,
+    IconListWidgetComponent,
+    ButtonWidgetComponent
   ],
   template: `
     @switch (block().type) {
@@ -33,6 +37,12 @@ import { ImageWidgetComponent } from '../widgets/image-widget.component';
       }
       @case ('image') {
         <pb-image-widget [block]="block()" />
+      }
+      @case ('icon-list') {
+        <pb-icon-list-widget [block]="block()" />
+      }
+      @case ('button') {
+        <pb-button-widget [block]="block()" />
       }
       @default {
         <div>Unknown block type: {{ block().type }}</div>

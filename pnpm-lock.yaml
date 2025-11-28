@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@angular/aria':
+        specifier: 21.0.1
+        version: 21.0.1(@angular/cdk@21.0.1(@angular/common@21.0.1(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))
       '@angular/cdk':
         specifier: ^21.0.1
         version: 21.0.1(@angular/common@21.0.1(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -158,6 +161,12 @@ packages:
   '@angular-devkit/schematics@21.0.0':
     resolution: {integrity: sha512-8zwXp8OTzJO3IY3Ge3lLqXokNAtQy6kM1FeTyPT20M+0AQHTX9WJlGaYEWdLYI9WwNPWy1/Iq6AaZNcR5phPpw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
+
+  '@angular/aria@21.0.1':
+    resolution: {integrity: sha512-7TbQUNENOMckAor5L/vQuqh1wxOfjDCI8I3r4oRM58+lC2+zASFTQme7Z3zkPBD7whdnzSGSqLsFKGa4ZbCYDg==}
+    peerDependencies:
+      '@angular/cdk': 21.0.1
+      '@angular/core': ^21.0.0 || ^22.0.0
 
   '@angular/build@21.0.0':
     resolution: {integrity: sha512-TobXT9fXZVee1yULlcOVowOurCUoJlku8st5vzkRZekP520qRjBSEbIk8V2emkFbzgzOeJUtXv1pvrBY7yAYhQ==}
@@ -3278,6 +3287,12 @@ snapshots:
       rxjs: 7.8.2
     transitivePeerDependencies:
       - chokidar
+
+  '@angular/aria@21.0.1(@angular/cdk@21.0.1(@angular/common@21.0.1(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))':
+    dependencies:
+      '@angular/cdk': 21.0.1(@angular/common@21.0.1(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@angular/core': 21.0.1(@angular/compiler@21.0.1)(rxjs@7.8.2)
+      tslib: 2.8.1
 
   '@angular/build@21.0.0(efbc856ba61f72c60689432345c908be)':
     dependencies:

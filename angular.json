@@ -37,28 +37,28 @@
           "skipTests": true
         }
       },
-      "root": "projects/builder-admin",
-      "sourceRoot": "projects/builder-admin/src",
+      "root": "projects/admin",
+      "sourceRoot": "projects/admin/src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "projects/builder-admin/src/main.ts",
-            "tsConfig": "projects/builder-admin/tsconfig.app.json",
+            "browser": "projects/admin/src/main.ts",
+            "tsConfig": "projects/admin/tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "projects/builder-admin/public"
+                "input": "projects/admin/public"
               }
             ],
             "styles": [
-              "projects/builder-admin/src/styles.css"
+              "projects/admin/src/styles.css"
             ],
-            "server": "projects/builder-admin/src/main.server.ts",
+            "server": "projects/admin/src/main.server.ts",
             "outputMode": "server",
             "ssr": {
-              "entry": "projects/builder-admin/src/server.ts"
+              "entry": "projects/admin/src/server.ts"
             }
           },
           "configurations": {

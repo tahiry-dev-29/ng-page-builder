@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, signal } from '@angular/core';
 
-export type Unit = 'px' | '%' | 'em' | 'rem' | 'vh' | 'vw';
+export type Unit = 'px' | '%' | 'em' | 'rem' | 'vh' | 'vw' | 'fr';
 
 @Component({
   selector: 'app-unit-control',
@@ -68,7 +68,7 @@ export class UnitControlComponent {
   label = input.required<string>();
   placeholder = input('');
   showDeviceSelector = input(true);
-  availableUnits = input<Unit[]>(['px', '%', 'em', 'rem', 'vh', 'vw']);
+  availableUnits = input<Unit[]>(['px', '%', 'em', 'rem', 'vh', 'vw', 'fr']);
   
   value = signal(0);
   selectedUnit = signal<Unit>('px');

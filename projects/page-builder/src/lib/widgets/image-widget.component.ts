@@ -1,42 +1,61 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { Block, ImageContent } from '../core/block.interface';
-import { blockStylesToCSS } from '../core/style-util';
+import { Component, ChangeDetectionStrategy, input, signal, computed } from '@angular/core';
+import { Block, ImageContent, getComputedStyles } from '../core/block.interface';
+import { blockStylesToCSS, DeviceType } from '../core/style-util';
 
 @Component({
   selector: 'pb-image-widget',
-  standalone: true,
   template: `
-    <img 
-      [src]="imageSrc()" 
-      [alt]="imageAlt()" 
-      [style]="computedStyles()"
+    <figure 
+      (mouseenter)="isHovered.set(true)"
+      (mouseleave)="isHovered.set(false)"
     >
+      <img 
+        [src]="content().src" 
+        [alt]="content().alt || ''" 
+        [style]="computedStyles()"
+      >
+      @if (content().caption) {
+        <figcaption>{{ content().caption }}</figcaption>
+      }
+    </figure>
   `,
   styles: `
     :host {
       display: block;
     }
+    figure {
+      margin: 0;
+    }
     img {
       max-width: 100%;
       height: auto;
+      display: block;
+    }
+    figcaption {
+      font-size: 14px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 8px;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ImageWidgetComponent {
   block = input.required<Block>();
+  device = input<DeviceType>('desktop');
+  
+  isHovered = signal(false);
 
-  computedStyles() {
-    return blockStylesToCSS(this.block().styles);
-  }
+  content = computed(() => {
+    return (this.block().data as ImageContent) || { src: '', alt: '' };
+  });
 
-  imageSrc() {
-    const content = this.block().content as ImageContent;
-    return content?.src || '';
-  }
-
-  imageAlt() {
-    const content = this.block().content as ImageContent;
-    return content?.alt || '';
-  }
+  computedStyles = computed(() => {
+    const styles = getComputedStyles(
+      this.block().styles, 
+      this.device(), 
+      this.isHovered()
+    );
+    return blockStylesToCSS(styles);
+  });
 }

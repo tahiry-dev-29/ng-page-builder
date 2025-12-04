@@ -1,38 +1,37 @@
-import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
-import { WIDGETS } from './widget-list';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, effect } from '@angular/core';
+import { CdkDrag, CdkDragPlaceholder, CdkDragPreview, CdkDropList } from '@angular/cdk/drag-drop';
+import { WIDGETS, WidgetItem, createBlockFromWidget } from './widget-list';
 import { SettingsPanelComponent } from './settings/settings-panel.component';
+import { BuilderStateService } from '@admin/services/builder-state-service';
+import { DragDropService } from '@admin/services/drag-drop-service';
 
 @Component({
   selector: 'app-editor-sidebar',
-  standalone: true,
-  imports: [SettingsPanelComponent],
+  imports: [SettingsPanelComponent, CdkDrag, CdkDragPlaceholder, CdkDragPreview, CdkDropList],
   template: `
-    <!-- Toggle between Elements and Settings -->
-    @if (currentView() === 'elements') {
-      <aside class="w-80 bg-white border-r border-gray-200 h-full flex flex-col font-sans text-gray-800">
+    @if (showSettings()) {
+      <app-settings-panel 
+        [widgetType]="selectedBlockType()"
+        [widgetLabel]="'Modifier ' + selectedBlockLabel()"
+        (back)="deselectBlock()" 
+      />
+    } @else {
+      <aside class="sidebar">
         <!-- Header -->
-        <div class="p-4 border-b border-gray-200 text-center">
-          <h2 class="text-lg font-bold">Éléments</h2>
+        <div class="sidebar-header">
+          <h2>Éléments</h2>
         </div>
 
         <!-- Tabs -->
-        <div class="flex border-b border-gray-200">
+        <div class="tabs">
           <button 
-            class="flex-1 py-3 text-sm font-medium border-b-2 transition-colors"
-            [class.border-black]="activeTab() === 'widgets'"
-            [class.text-black]="activeTab() === 'widgets'"
-            [class.border-transparent]="activeTab() !== 'widgets'"
-            [class.text-gray-500]="activeTab() !== 'widgets'"
+            [class.active]="activeTab() === 'widgets'"
             (click)="activeTab.set('widgets')"
           >
             Widgets
           </button>
           <button 
-            class="flex-1 py-3 text-sm font-medium border-b-2 transition-colors"
-            [class.border-black]="activeTab() === 'globals'"
-            [class.text-black]="activeTab() === 'globals'"
-            [class.border-transparent]="activeTab() !== 'globals'"
-            [class.text-gray-500]="activeTab() !== 'globals'"
+            [class.active]="activeTab() === 'globals'"
             (click)="activeTab.set('globals')"
           >
             Globales
@@ -41,35 +40,47 @@ import { SettingsPanelComponent } from './settings/settings-panel.component';
 
         <!-- Content -->
         @if (activeTab() === 'widgets') {
-          <div class="flex-1 overflow-y-auto p-4">
+          <div class="content">
             <!-- Search -->
-            <div class="relative mb-6">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+            <div class="search-box">
+              <span class="material-symbols-outlined">search</span>
               <input 
                 type="text" 
                 placeholder="Rechercher un widget..." 
-                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 (input)="searchQuery.set($any($event.target).value)"
               >
             </div>
 
             <!-- Layout Category -->
             @if (layoutWidgets().length > 0) {
-              <div class="mb-6">
-                <div class="flex items-center mb-3 cursor-pointer" (click)="toggleCategory('layout')">
-                  <span class="material-symbols-outlined text-sm mr-2 transition-transform" [class.rotate-[-90deg]]="!isLayoutOpen()">arrow_drop_down</span>
-                  <h3 class="text-sm font-bold">Mise en page</h3>
+              <div class="category">
+                <div class="category-header" (click)="toggleCategory('layout')">
+                  <span class="material-symbols-outlined arrow" [class.collapsed]="!isLayoutOpen()">arrow_drop_down</span>
+                  <h3>Mise en page</h3>
                 </div>
                 
                 @if (isLayoutOpen()) {
-                  <div class="grid grid-cols-2 gap-3">
+                  <div 
+                    class="widget-grid"
+                    cdkDropList
+                    [cdkDropListSortingDisabled]="true"
+                    [cdkDropListEnterPredicate]="noEnter"
+                  >
                     @for (widget of layoutWidgets(); track widget.label) {
                       <div 
-                        class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-md hover:shadow-md hover:border-gray-300 transition-all cursor-pointer bg-white group"
-                        (click)="selectWidget(widget)"
+                        class="widget-item"
+                        cdkDrag
+                        [cdkDragData]="widget"
+                        (cdkDragStarted)="onDragStart(widget)"
+                        (cdkDragEnded)="onDragEnd()"
                       >
-                        <span class="material-symbols-outlined text-3xl text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">{{ widget.icon }}</span>
-                        <span class="text-xs text-gray-600 group-hover:text-gray-900">{{ widget.label }}</span>
+                        <div *cdkDragPreview class="drag-preview">
+                          <span class="material-symbols-outlined">{{ widget.icon }}</span>
+                          <span>{{ widget.label }}</span>
+                        </div>
+                        <div *cdkDragPlaceholder class="drag-placeholder"></div>
+                        <span class="material-symbols-outlined widget-icon">{{ widget.icon }}</span>
+                        <span class="widget-label">{{ widget.label }}</span>
                       </div>
                     }
                   </div>
@@ -79,21 +90,34 @@ import { SettingsPanelComponent } from './settings/settings-panel.component';
 
             <!-- Basic Category -->
             @if (basicWidgets().length > 0) {
-              <div class="mb-6">
-                <div class="flex items-center mb-3 cursor-pointer" (click)="toggleCategory('basic')">
-                  <span class="material-symbols-outlined text-sm mr-2 transition-transform" [class.rotate-[-90deg]]="!isBasicOpen()">arrow_drop_down</span>
-                  <h3 class="text-sm font-bold">Basique</h3>
+              <div class="category">
+                <div class="category-header" (click)="toggleCategory('basic')">
+                  <span class="material-symbols-outlined arrow" [class.collapsed]="!isBasicOpen()">arrow_drop_down</span>
+                  <h3>Basique</h3>
                 </div>
                 
                 @if (isBasicOpen()) {
-                  <div class="grid grid-cols-2 gap-3">
+                  <div 
+                    class="widget-grid"
+                    cdkDropList
+                    [cdkDropListSortingDisabled]="true"
+                    [cdkDropListEnterPredicate]="noEnter"
+                  >
                     @for (widget of basicWidgets(); track widget.label) {
                       <div 
-                        class="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-md hover:shadow-md hover:border-gray-300 transition-all cursor-pointer bg-white group"
-                        (click)="selectWidget(widget)"
+                        class="widget-item"
+                        cdkDrag
+                        [cdkDragData]="widget"
+                        (cdkDragStarted)="onDragStart(widget)"
+                        (cdkDragEnded)="onDragEnd()"
                       >
-                        <span class="material-symbols-outlined text-3xl text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">{{ widget.icon }}</span>
-                        <span class="text-xs text-gray-600 group-hover:text-gray-900">{{ widget.label }}</span>
+                        <div *cdkDragPreview class="drag-preview">
+                          <span class="material-symbols-outlined">{{ widget.icon }}</span>
+                          <span>{{ widget.label }}</span>
+                        </div>
+                        <div *cdkDragPlaceholder class="drag-placeholder"></div>
+                        <span class="material-symbols-outlined widget-icon">{{ widget.icon }}</span>
+                        <span class="widget-label">{{ widget.label }}</span>
                       </div>
                     }
                   </div>
@@ -102,17 +126,11 @@ import { SettingsPanelComponent } from './settings/settings-panel.component';
             }
           </div>
         } @else {
-          <div class="flex-1 flex items-center justify-center text-gray-500 text-sm">
+          <div class="empty-globals">
             Aucun élément global
           </div>
         }
       </aside>
-    } @else {
-      <app-settings-panel 
-        [widgetType]="selectedWidget()?.category || 'layout'"
-        [widgetLabel]="selectedWidget()?.label ? 'Modifier ' + selectedWidget()?.label : 'Modifier Grille'"
-        (back)="currentView.set('elements')" 
-      />
     }
   `,
   styles: `
@@ -120,26 +138,209 @@ import { SettingsPanelComponent } from './settings/settings-panel.component';
       display: block;
       height: 100%;
     }
-    /* Hide scrollbar for Chrome, Safari and Opera */
-    .overflow-y-auto::-webkit-scrollbar {
-      display: none;
+
+    .sidebar {
+      width: 320px;
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, sans-serif;
     }
-    /* Hide scrollbar for IE, Edge and Firefox */
-    .overflow-y-auto {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: center;
+
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+      }
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+
+      button {
+        flex: 1;
+        padding: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &.active {
+          color: #111827;
+          border-bottom-color: #111827;
+        }
+
+        &:hover:not(.active) {
+          color: #374151;
+        }
+      }
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+
+      &::-webkit-scrollbar { display: none; }
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .search-box {
+      position: relative;
+      margin-bottom: 24px;
+
+      .material-symbols-outlined {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 18px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px 10px 40px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+
+        &:focus { border-color: #3b82f6; }
+      }
+    }
+
+    .category { margin-bottom: 24px; }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+
+      .arrow {
+        font-size: 20px;
+        margin-right: 4px;
+        transition: transform 0.2s;
+        &.collapsed { transform: rotate(-90deg); }
+      }
+
+      h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    }
+
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .widget-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 8px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: grab;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        transform: translateY(-2px);
+      }
+
+      &:active { cursor: grabbing; }
+
+      .widget-icon {
+        font-size: 28px;
+        color: #6b7280;
+        margin-bottom: 8px;
+        transition: color 0.2s;
+      }
+
+      .widget-label {
+        font-size: 12px;
+        color: #4b5563;
+        text-align: center;
+      }
+
+      &:hover .widget-icon { color: #3b82f6; }
+    }
+
+    .drag-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+      font-weight: 500;
+
+      .material-symbols-outlined { font-size: 20px; }
+    }
+
+    .drag-placeholder {
+      background: #e5e7eb;
+      border: 2px dashed #9ca3af;
+      border-radius: 8px;
+      height: 80px;
+    }
+
+    .empty-globals {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      font-size: 14px;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditorSidebarComponent {
-  currentView = signal<'elements' | 'settings'>('settings'); // Default to settings for demo
+  private builderState = inject(BuilderStateService);
+  private dragDropService = inject(DragDropService);
+
   activeTab = signal<'widgets' | 'globals'>('widgets');
   searchQuery = signal('');
-  selectedWidget = signal<any>(null);
-  
   isLayoutOpen = signal(true);
   isBasicOpen = signal(true);
+
+  // Show settings when a block is selected
+  showSettings = computed(() => this.builderState.selectedBlockId() !== null);
+  
+  // Get selected block info
+  selectedBlockType = computed(() => {
+    const block = this.builderState.selectedBlock();
+    if (!block) return 'layout';
+    return block.type === 'container' || block.type === 'grid' ? 'layout' : 'basic';
+  });
+
+  selectedBlockLabel = computed(() => {
+    const block = this.builderState.selectedBlock();
+    return block?.label || block?.type || 'Block';
+  });
 
   layoutWidgets = computed(() => {
     const query = this.searchQuery().toLowerCase();
@@ -159,9 +360,17 @@ export class EditorSidebarComponent {
     }
   }
 
-  selectWidget(widget: any) {
-    // Store selected widget and switch to settings view
-    this.selectedWidget.set(widget);
-    this.currentView.set('settings');
+  onDragStart(widget: WidgetItem) {
+    this.dragDropService.startWidgetDrag(widget);
   }
+
+  onDragEnd() {
+    this.dragDropService.endDrag();
+  }
+
+  deselectBlock() {
+    this.builderState.selectBlock(null);
+  }
+
+  noEnter = () => false;
 }

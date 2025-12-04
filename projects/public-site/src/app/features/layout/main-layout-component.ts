@@ -13,7 +13,7 @@ import { RouterOutlet } from '@angular/router';
         </div>
       </header>
       <main>
-        <router-outlet></router-outlet>
+        <router-outlet />
       </main>
       <footer class="bg-gray-100 p-8 mt-8">
         <div class="container mx-auto text-center text-gray-500">

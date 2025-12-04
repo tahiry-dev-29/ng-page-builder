@@ -1,13 +1,13 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { EditorSidebarComponent } from '../editor-sidebar/editor-sidebar-component';
 import { EditorCanvasComponent } from '../canvas/editor-canvas.component';
 
 @Component({
   selector: 'app-editor-layout',
-  standalone: true,
-  imports: [EditorSidebarComponent, EditorCanvasComponent],
+  imports: [EditorSidebarComponent, EditorCanvasComponent, CdkDropListGroup],
   template: `
-    <div class="editor-layout">
+    <div class="editor-layout" cdkDropListGroup>
       <app-editor-sidebar />
       <app-editor-canvas />
     </div>
@@ -21,6 +21,4 @@ import { EditorCanvasComponent } from '../canvas/editor-canvas.component';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EditorLayoutComponent {
-
-}
+export class EditorLayoutComponent {}

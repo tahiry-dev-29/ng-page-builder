@@ -1,12 +1,16 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { Block, TextContent } from '../core/block.interface';
-import { blockStylesToCSS } from '../core/style-util';
+import { Component, ChangeDetectionStrategy, input, signal, computed } from '@angular/core';
+import { Block, TextContent, getComputedStyles } from '../core/block.interface';
+import { blockStylesToCSS, DeviceType } from '../core/style-util';
 
 @Component({
   selector: 'pb-text-widget',
-  standalone: true,
   template: `
-    <div [style]="computedStyles()" [innerHTML]="textContent()"></div>
+    <div 
+      [style]="computedStyles()" 
+      [innerHTML]="textContent()"
+      (mouseenter)="isHovered.set(true)"
+      (mouseleave)="isHovered.set(false)"
+    ></div>
   `,
   styles: `
     :host {
@@ -17,13 +21,21 @@ import { blockStylesToCSS } from '../core/style-util';
 })
 export class TextWidgetComponent {
   block = input.required<Block>();
+  device = input<DeviceType>('desktop');
+  
+  isHovered = signal(false);
 
-  computedStyles() {
-    return blockStylesToCSS(this.block().styles);
-  }
+  computedStyles = computed(() => {
+    const styles = getComputedStyles(
+      this.block().styles, 
+      this.device(), 
+      this.isHovered()
+    );
+    return blockStylesToCSS(styles);
+  });
 
   textContent() {
-    const content = this.block().content as TextContent;
+    const content = this.block().data as TextContent;
     return content?.text || '';
   }
 }

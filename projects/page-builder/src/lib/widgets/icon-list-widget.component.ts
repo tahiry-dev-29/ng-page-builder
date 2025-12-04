@@ -1,6 +1,6 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { Block } from '../core/block.interface';
-import { blockStylesToCSS } from '../core/style-util';
+import { Component, ChangeDetectionStrategy, input, signal, computed } from '@angular/core';
+import { Block, getComputedStyles } from '../core/block.interface';
+import { blockStylesToCSS, DeviceType } from '../core/style-util';
 
 export interface IconListItem {
   text: string;
@@ -15,9 +15,14 @@ export interface IconListContent {
 
 @Component({
   selector: 'pb-icon-list-widget',
-  standalone: true,
   template: `
-    <ul class="icon-list" [style]="computedStyles()" [class.horizontal]="isHorizontal()">
+    <ul 
+      class="icon-list" 
+      [style]="computedStyles()" 
+      [class.horizontal]="isHorizontal()"
+      (mouseenter)="isHovered.set(true)"
+      (mouseleave)="isHovered.set(false)"
+    >
       @for (item of items(); track $index) {
         <li class="icon-list-item">
           @if (item.link) {
@@ -42,7 +47,7 @@ export interface IconListContent {
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: var(--gap, 10px);
+      gap: 10px;
     }
 
     .icon-list.horizontal {
@@ -60,46 +65,37 @@ export interface IconListContent {
       align-items: center;
       text-decoration: none;
       color: inherit;
-      gap: var(--icon-gap, 8px);
+      gap: 8px;
     }
 
     .icon {
-      color: var(--icon-color, inherit);
-      font-size: var(--icon-size, 14px);
-    }
-
-    .text {
-      color: var(--text-color, inherit);
-      font-size: var(--text-size, inherit);
-      font-weight: var(--text-weight, inherit);
+      font-size: 18px;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IconListWidgetComponent {
   block = input.required<Block>();
+  device = input<DeviceType>('desktop');
+  
+  isHovered = signal(false);
 
-  computedStyles() {
-    const styles = this.block().styles || {};
-    return {
-      ...blockStylesToCSS(styles),
-      '--gap': styles['gap'],
-      '--icon-gap': styles['iconGap'],
-      '--icon-color': styles['iconColor'],
-      '--icon-size': styles['iconSize'],
-      '--text-color': styles['textColor'],
-      '--text-size': styles['textSize'],
-      '--text-weight': styles['textWeight']
-    };
-  }
+  computedStyles = computed(() => {
+    const styles = getComputedStyles(
+      this.block().styles, 
+      this.device(), 
+      this.isHovered()
+    );
+    return blockStylesToCSS(styles);
+  });
 
-  items() {
-    const content = this.block().content as IconListContent;
+  items = computed(() => {
+    const content = this.block().data as IconListContent;
     return content?.items || [];
-  }
+  });
 
-  isHorizontal() {
-    const content = this.block().content as IconListContent;
+  isHorizontal = computed(() => {
+    const content = this.block().data as IconListContent;
     return content?.layout === 'horizontal';
-  }
+  });
 }

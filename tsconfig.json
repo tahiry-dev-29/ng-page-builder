@@ -3,6 +3,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "baseUrl": "./",
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -13,8 +14,10 @@
     "experimentalDecorators": true,
     "paths": {
       "page-builder": [
-        "./dist/page-builder",
         "./dist/page-builder"
+      ],
+      "@admin/*": [
+        "./projects/admin/src/app/*"
       ]
     },
     "importHelpers": true,

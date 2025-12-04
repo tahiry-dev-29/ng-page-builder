@@ -28,7 +28,7 @@ import { Component, ChangeDetectionStrategy, input, signal } from '@angular/core
       
       @if (isOpen()) {
         <div class="mt-2 pl-6">
-          <ng-content></ng-content>
+          <ng-content />
         </div>
       }
     </div>

@@ -1,4 +1,6 @@
-import { BlockStyles } from './block.interface';
+import { BlockStyles, ResponsiveStyles, getComputedStyles } from './block.interface';
+
+export type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
 /**
  * Converts BlockStyles object to CSS style object
@@ -8,16 +10,26 @@ export function blockStylesToCSS(styles?: BlockStyles): Record<string, string> {
 
   const cssStyles: Record<string, string> = {};
 
-  // Direct mapping for most properties
   Object.entries(styles).forEach(([key, value]) => {
     if (value !== undefined) {
-      // Convert camelCase to kebab-case
       const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
       cssStyles[cssKey] = value;
     }
   });
 
   return cssStyles;
+}
+
+/**
+ * Gets computed styles for a device, with hover support
+ */
+export function getStylesForDevice(
+  styles: ResponsiveStyles, 
+  device: DeviceType = 'desktop',
+  isHovered: boolean = false
+): Record<string, string> {
+  const computed = getComputedStyles(styles, device, isHovered);
+  return blockStylesToCSS(computed);
 }
 
 /**

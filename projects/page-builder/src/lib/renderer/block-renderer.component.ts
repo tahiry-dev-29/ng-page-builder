@@ -1,11 +1,13 @@
-import { Component, ChangeDetectionStrategy, input, computed, signal } from '@angular/core';
-import { Block, getComputedStyles, TextContent, SpacerContent } from '../core/block.interface';
+import { Component, ChangeDetectionStrategy, input, computed, signal, output } from '@angular/core';
+import { CdkDropList, CdkDragDrop } from '@angular/cdk/drag-drop';
+import { Block, getComputedStyles, TextContent, SpacerContent, BlockDropEvent } from '../core/block.interface';
 import { DeviceType, blockStylesToCSS } from '../core/style-util';
 import { ContainerWidgetComponent } from '../widgets/container-widget.component';
 import { TextWidgetComponent } from '../widgets/text-widget.component';
 import { ImageWidgetComponent } from '../widgets/image-widget.component';
 import { IconListWidgetComponent } from '../widgets/icon-list-widget.component';
 import { ButtonWidgetComponent } from '../widgets/button-widget.component';
+import { VideoWidgetComponent } from '../widgets/video-widget.component';
 
 @Component({
   selector: 'pb-block-renderer',
@@ -14,21 +16,62 @@ import { ButtonWidgetComponent } from '../widgets/button-widget.component';
     TextWidgetComponent,
     ImageWidgetComponent,
     IconListWidgetComponent,
-    ButtonWidgetComponent
+    ButtonWidgetComponent,
+    VideoWidgetComponent,
+    CdkDropList
   ],
   template: `
     @switch (block().type) {
       @case ('container') {
         <pb-container-widget [block]="block()" [device]="device()">
-          @for (child of block().children; track child.id) {
-            <pb-block-renderer [block]="child" [device]="device()" />
+          @if (editable()) {
+            <div 
+              class="drop-zone"
+              cdkDropList
+              [cdkDropListData]="block().children || []"
+              (cdkDropListDropped)="onDrop($event)"
+            >
+              @for (child of block().children; track child.id) {
+                <pb-block-renderer 
+                  [block]="child" 
+                  [device]="device()" 
+                  [editable]="true"
+                  (drop)="drop.emit($event)"
+                />
+              }
+              @if (!block().children?.length) {
+                <div class="empty-placeholder">Déposez ici</div>
+              }
+            </div>
+          } @else {
+            @for (child of block().children; track child.id) {
+              <pb-block-renderer [block]="child" [device]="device()" />
+            }
           }
         </pb-container-widget>
       }
       @case ('grid') {
         <pb-container-widget [block]="block()" [device]="device()">
-          @for (child of block().children; track child.id) {
-            <pb-block-renderer [block]="child" [device]="device()" />
+          @if (editable()) {
+            <div 
+              class="drop-zone grid-zone"
+              cdkDropList
+              [cdkDropListData]="block().children || []"
+              (cdkDropListDropped)="onDrop($event)"
+            >
+              @for (child of block().children; track child.id) {
+                <pb-block-renderer 
+                  [block]="child" 
+                  [device]="device()" 
+                  [editable]="true"
+                  (drop)="drop.emit($event)"
+                />
+              }
+            </div>
+          } @else {
+            @for (child of block().children; track child.id) {
+              <pb-block-renderer [block]="child" [device]="device()" />
+            }
           }
         </pb-container-widget>
       }
@@ -65,7 +108,10 @@ import { ButtonWidgetComponent } from '../widgets/button-widget.component';
         <hr [style]="dividerStyles()" />
       }
       @case ('icon-list') {
-        <pb-icon-list-widget [block]="block()" />
+        <pb-icon-list-widget [block]="block()" [device]="device()" />
+      }
+      @case ('video') {
+        <pb-video-widget [block]="block()" [device]="device()" />
       }
       @default {
         <div class="unknown-block">
@@ -99,14 +145,42 @@ import { ButtonWidgetComponent } from '../widgets/button-widget.component';
       color: #92400e;
       font-size: 14px;
     }
+    .drop-zone {
+      min-height: 50px;
+      height: 100%;
+      width: 100%;
+    }
+    .empty-placeholder {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #ccc;
+      color: #999;
+      font-size: 12px;
+      margin: 4px;
+      background: rgba(255,255,255,0.5);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BlockRendererComponent {
   block = input.required<Block>();
   device = input<DeviceType>('desktop');
+  editable = input(false);
+  
+  drop = output<BlockDropEvent>();
   
   isHovered = signal(false);
+
+  onDrop(event: CdkDragDrop<Block[], any>) {
+    // Stop propagation if possible, but CdkDropList doesn't propagate by default.
+    // However, we need to emit this up to the editor which has the state service.
+    this.drop.emit({
+      event,
+      targetId: this.block().id
+    });
+  }
 
   // Heading helpers
   headingText = computed(() => {

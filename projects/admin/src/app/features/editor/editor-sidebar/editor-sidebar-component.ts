@@ -65,6 +65,7 @@ import { DragDropService } from '@admin/services/drag-drop-service';
                     cdkDropList
                     [cdkDropListSortingDisabled]="true"
                     [cdkDropListEnterPredicate]="noEnter"
+                    [cdkDropListConnectedTo]="builderState.allDropListIds()"
                   >
                     @for (widget of layoutWidgets(); track widget.label) {
                       <div 
@@ -102,6 +103,7 @@ import { DragDropService } from '@admin/services/drag-drop-service';
                     cdkDropList
                     [cdkDropListSortingDisabled]="true"
                     [cdkDropListEnterPredicate]="noEnter"
+                    [cdkDropListConnectedTo]="builderState.allDropListIds()"
                   >
                     @for (widget of basicWidgets(); track widget.label) {
                       <div 
@@ -319,7 +321,7 @@ import { DragDropService } from '@admin/services/drag-drop-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditorSidebarComponent {
-  private builderState = inject(BuilderStateService);
+  builderState = inject(BuilderStateService);
   private dragDropService = inject(DragDropService);
 
   activeTab = signal<'widgets' | 'globals'>('widgets');
@@ -334,7 +336,7 @@ export class EditorSidebarComponent {
   selectedBlockType = computed(() => {
     const block = this.builderState.selectedBlock();
     if (!block) return 'layout';
-    return block.type === 'container' || block.type === 'grid' ? 'layout' : 'basic';
+    return block.type;
   });
 
   selectedBlockLabel = computed(() => {

@@ -1,130 +1,92 @@
-import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
-import { TitleCasePipe } from '@angular/common';
-import { CdkDropList, CdkDrag, CdkDragDrop, CdkDragPlaceholder, moveItemInArray } from '@angular/cdk/drag-drop';
-import { BlockRendererComponent, Block } from 'page-builder';
 import { BuilderStateService } from '@admin/services/builder-state-service';
 import { DragDropService } from '@admin/services/drag-drop-service';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Block, BlockRendererComponent } from 'page-builder';
 import { createBlockFromWidget, WidgetItem } from '../editor-sidebar/widget-list';
+import { ColumnSelectorComponent } from '../components/column-selector/column-selector.component';
+import { CanvasBlockComponent } from './canvas-block.component';
 
 export type ViewMode = 'desktop' | 'tablet' | 'mobile';
 
 @Component({
   selector: 'app-editor-canvas',
-  imports: [BlockRendererComponent, TitleCasePipe, CdkDropList, CdkDrag, CdkDragPlaceholder],
+  imports: [CdkDropList, CdkDrag, ColumnSelectorComponent, CanvasBlockComponent],
   template: `
-    <div class="canvas-toolbar">
-      <div class="toolbar-left">
-        <button 
-          class="toolbar-btn"
-          [disabled]="!builderState.canUndo()"
-          (click)="builderState.undo()"
-          title="Annuler (Ctrl+Z)"
-        >
-          <span class="material-symbols-outlined">undo</span>
-        </button>
-        <button 
-          class="toolbar-btn"
-          [disabled]="!builderState.canRedo()"
-          (click)="builderState.redo()"
-          title="Rétablir (Ctrl+Y)"
-        >
-          <span class="material-symbols-outlined">redo</span>
-        </button>
+    <div class="editor-canvas">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="icon-btn" (click)="undo()" [disabled]="!builderState.canUndo()">
+            <span class="material-symbols-outlined">undo</span>
+          </button>
+          <button class="icon-btn" (click)="redo()" [disabled]="!builderState.canRedo()">
+            <span class="material-symbols-outlined">redo</span>
+          </button>
+        </div>
+
+        <div class="device-toggle">
+          @for (mode of ['desktop', 'tablet', 'mobile']; track mode) {
+            <button 
+              class="device-btn"
+              [class.active]="viewMode() === mode"
+              (click)="setViewMode($any(mode))"
+            >
+              <span class="material-symbols-outlined">
+                {{ mode === 'desktop' ? 'desktop_windows' : mode === 'tablet' ? 'tablet_mac' : 'smartphone' }}
+              </span>
+            </button>
+          }
+        </div>
+
+        <button class="save-btn" (click)="saveNow()">Sauvegarder</button>
       </div>
 
-      <div class="view-controls">
-        <button 
-          [class.active]="viewMode() === 'desktop'"
-          (click)="viewMode.set('desktop')"
-          title="Desktop"
+      <!-- Canvas Area -->
+      <div class="canvas-area" (click)="builderState.selectBlock(null)">
+        <div 
+          class="canvas-content"
+          [class.desktop]="viewMode() === 'desktop'"
+          [class.tablet]="viewMode() === 'tablet'"
+          [class.mobile]="viewMode() === 'mobile'"
+          cdkDropList
+          #rootList="cdkDropList"
+          id="root-list"
+          [cdkDropListData]="{ type: 'root', children: rootChildren() }"
+          [cdkDropListConnectedTo]="builderState.allDropListIds()"
+          [cdkDropListEnterPredicate]="canEnter"
+          (cdkDropListDropped)="onRootDrop($event)"
         >
-          <span class="material-symbols-outlined">desktop_windows</span>
-        </button>
-        <button 
-          [class.active]="viewMode() === 'tablet'"
-          (click)="viewMode.set('tablet')"
-          title="Tablet"
-        >
-          <span class="material-symbols-outlined">tablet_mac</span>
-        </button>
-        <button 
-          [class.active]="viewMode() === 'mobile'"
-          (click)="viewMode.set('mobile')"
-          title="Mobile"
-        >
-          <span class="material-symbols-outlined">smartphone</span>
-        </button>
-      </div>
-
-      <div class="toolbar-right">
-        <span class="view-label">{{ viewMode() | titlecase }}</span>
-      </div>
-    </div>
-
-    <div class="canvas-container">
-      <div 
-        class="canvas-content"
-        [class.desktop]="viewMode() === 'desktop'"
-        [class.tablet]="viewMode() === 'tablet'"
-        [class.mobile]="viewMode() === 'mobile'"
-        cdkDropList
-        [cdkDropListData]="rootChildren()"
-        (cdkDropListDropped)="onDrop($event)"
-        [cdkDropListEnterPredicate]="canEnter"
-      >
-        @for (block of rootChildren(); track block.id; let i = $index) {
-          <div 
-            class="block-wrapper"
-            cdkDrag
-            [cdkDragData]="block"
-            [class.selected]="builderState.selectedBlockId() === block.id"
-            (click)="selectBlock(block.id, $event)"
-          >
-            <!-- Drag Handle -->
-            <div class="block-handle" cdkDragHandle>
-              <span class="material-symbols-outlined">drag_indicator</span>
+          @if (rootChildren().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined">add_circle_outline</span>
+              <p>Glissez des widgets ici</p>
             </div>
-            
-            <!-- Block Actions -->
-            <div class="block-actions">
-              <button (click)="duplicateBlock(block.id, $event)" title="Dupliquer">
-                <span class="material-symbols-outlined">content_copy</span>
-              </button>
-              <button (click)="deleteBlock(block.id, $event)" title="Supprimer" class="delete">
-                <span class="material-symbols-outlined">delete</span>
-              </button>
-            </div>
+          }
 
-            <!-- Block Renderer -->
-            <pb-block-renderer [block]="block" [device]="viewMode()" />
-
-            <!-- Drag Placeholder -->
-            <div *cdkDragPlaceholder class="block-placeholder"></div>
-          </div>
-        }
-        
-        @if (rootChildren().length === 0 || dragDropService.isDragging()) {
-          <div 
-            class="empty-state"
-            [class.active]="dragDropService.isDragging()"
-          >
-            <span class="material-symbols-outlined">add_box</span>
-            <p>{{ dragDropService.isDragging() ? 'Déposez ici' : 'Glissez un widget pour commencer' }}</p>
-          </div>
-        }
+          @for (block of rootChildren(); track block.id) {
+            <app-canvas-block [block]="block" />
+          }
+        </div>
       </div>
+
+      @if (builderState.pendingGridId()) {
+        <app-column-selector 
+          (select)="onColumnSelect($event)"
+          (cancel)="builderState.pendingGridId.set(null)"
+        />
+      }
     </div>
   `,
   styles: `
-    :host {
+    .editor-canvas {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      flex: 1;
-      height: 100%;
-      overflow: hidden;
+      height: 100vh;
+      background: #f3f4f6;
     }
-
-    .canvas-toolbar {
+    .toolbar {
       height: 48px;
       background: white;
       border-bottom: 1px solid #e5e7eb;
@@ -134,209 +96,72 @@ export type ViewMode = 'desktop' | 'tablet' | 'mobile';
       padding: 0 16px;
       flex-shrink: 0;
     }
-
-    .toolbar-left, .toolbar-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 120px;
-    }
-
-    .toolbar-right {
-      justify-content: flex-end;
-    }
-
-    .toolbar-btn {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      color: #6b7280;
-      background: none;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-
-      &:hover:not(:disabled) {
-        background: #f3f4f6;
-        color: #374151;
-      }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .material-symbols-outlined {
-        font-size: 20px;
-      }
-    }
-
-    .view-controls {
+    .toolbar-left {
       display: flex;
       gap: 4px;
+    }
+    .icon-btn {
+      padding: 6px;
+      border: none;
+      background: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #6b7280;
+      &:hover { background: #f3f4f6; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+      .material-symbols-outlined { font-size: 20px; }
+    }
+    .device-toggle {
+      display: flex;
       background: #f3f4f6;
       padding: 4px;
-      border-radius: 8px;
-
-      button {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        color: #6b7280;
-        background: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          color: #374151;
-        }
-
-        &.active {
-          background: white;
-          color: #3b82f6;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .material-symbols-outlined {
-          font-size: 20px;
-        }
-      }
+      border-radius: 6px;
     }
-
-    .view-label {
-      font-size: 13px;
+    .device-btn {
+      padding: 6px 8px;
+      border: none;
+      background: none;
+      border-radius: 4px;
+      cursor: pointer;
       color: #6b7280;
+      transition: all 0.2s;
+      &.active { background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+      .material-symbols-outlined { font-size: 20px; }
     }
-
-    .canvas-container {
+    .save-btn {
+      padding: 6px 16px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      &:hover { background: #2563eb; }
+    }
+    .canvas-area {
       flex: 1;
       overflow: auto;
-      background: #e5e7eb;
-      padding: 40px;
+      padding: 32px;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
     }
-
     .canvas-content {
       background: white;
-      min-height: calc(100vh - 168px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      transition: width 0.3s ease;
-      position: relative;
-
-      &.desktop {
-        width: 100%;
-        max-width: 1200px;
-      }
-
-      &.tablet {
-        width: 768px;
-      }
-
-      &.mobile {
-        width: 375px;
-      }
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      min-height: calc(100vh - 150px);
+      transition: width 0.3s;
+      width: 100%;
+      max-width: 1200px;
+      padding-bottom: 50px; /* Space for dropping at bottom */
     }
-
-    .block-wrapper {
-      position: relative;
-      cursor: pointer;
-      transition: all 0.2s;
-
-      &:hover {
-        outline: 2px solid #93c5fd;
-        outline-offset: -2px;
-      }
-
-      &.selected {
-        outline: 2px solid #3b82f6;
-        outline-offset: -2px;
-      }
-
-      &:hover .block-handle,
-      &:hover .block-actions {
-        opacity: 1;
-      }
+    .canvas-content.tablet { 
+      width: 768px; 
+      max-width: 768px;
     }
-
-    .block-handle {
-      position: absolute;
-      top: 0;
-      left: -32px;
-      width: 28px;
-      height: 28px;
-      background: #3b82f6;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: grab;
-      opacity: 0;
-      transition: opacity 0.2s;
-      z-index: 10;
-
-      &:active {
-        cursor: grabbing;
-      }
-
-      .material-symbols-outlined {
-        font-size: 18px;
-        color: white;
-      }
+    .canvas-content.mobile { 
+      width: 375px; 
+      max-width: 375px;
     }
-
-    .block-actions {
-      position: absolute;
-      top: 0;
-      right: -68px;
-      display: flex;
-      gap: 4px;
-      opacity: 0;
-      transition: opacity 0.2s;
-      z-index: 10;
-
-      button {
-        width: 28px;
-        height: 28px;
-        background: #374151;
-        border: none;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.2s;
-
-        &:hover {
-          background: #1f2937;
-        }
-
-        &.delete:hover {
-          background: #ef4444;
-        }
-
-        .material-symbols-outlined {
-          font-size: 16px;
-          color: white;
-        }
-      }
-    }
-
-    .block-placeholder {
-      background: #dbeafe;
-      border: 2px dashed #3b82f6;
-      border-radius: 4px;
-      min-height: 60px;
-    }
-
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -346,39 +171,22 @@ export type ViewMode = 'desktop' | 'tablet' | 'mobile';
       color: #9ca3af;
       border: 2px dashed #d1d5db;
       border-radius: 8px;
-      margin: 20px;
-      transition: all 0.2s;
-
-      &.active {
-        border-color: #3b82f6;
-        background: #eff6ff;
-        color: #3b82f6;
-      }
-
-      .material-symbols-outlined {
-        font-size: 48px;
-        margin-bottom: 12px;
-      }
-
-      p {
-        margin: 0;
-        font-size: 14px;
-      }
+      margin: 24px;
+      .material-symbols-outlined { font-size: 48px; margin-bottom: 8px; }
     }
-
-    /* CDK Drag styles */
     .cdk-drag-preview {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      box-sizing: border-box;
       border-radius: 4px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.25);
       background: white;
     }
-
-    .cdk-drag-animating {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-    }
-
-    .cdk-drop-list-dragging .block-wrapper:not(.cdk-drag-placeholder) {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    .cdk-drag-placeholder {
+      opacity: 0.5;
+      background: #dbeafe;
+      border: 2px dashed #3b82f6;
+      border-radius: 4px;
+      min-height: 80px;
+      flex-shrink: 0;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -389,51 +197,90 @@ export class EditorCanvasComponent {
 
   viewMode = signal<ViewMode>('desktop');
 
-  // Get children of root container
   rootChildren = computed(() => {
     const blocks = this.builderState.blocks();
     const root = blocks.find(b => b.id === 'root');
     return root?.children || [];
   });
 
-  canEnter = () => true;
+  canEnter = (drag: CdkDrag, drop: CdkDropList) => {
+    return true;
+  };
 
-  selectBlock(id: string, event: Event) {
-    event.stopPropagation();
-    this.builderState.selectBlock(id);
+  setViewMode(mode: ViewMode) {
+    this.viewMode.set(mode);
+    this.builderState.setDevice(mode);
   }
 
-  deleteBlock(id: string, event: Event) {
-    event.stopPropagation();
-    this.builderState.deleteBlock(id);
+  undo() { this.builderState.undo(); }
+  redo() { this.builderState.redo(); }
+  saveNow() { this.builderState.forceSave(); }
+
+  onRootDrop(event: CdkDragDrop<any, any>) {
+    console.log('[ROOT DROP]', event);
+    this.handleDrop(event, 'root');
   }
 
-  duplicateBlock(id: string, event: Event) {
-    event.stopPropagation();
-    this.builderState.duplicateBlock(id);
+  onColumnSelect(template: string) {
+    const id = this.builderState.pendingGridId();
+    if (id) {
+      // Update parent styles to be a grid
+      this.builderState.updateBlockStyles(id, 'desktop', {
+        display: 'grid',
+        gridTemplateColumns: template,
+        gap: '16px',
+        padding: '10px'
+      });
+
+      // Create column blocks
+      const colCount = template.split(' ').length;
+      const columns: Block[] = Array.from({ length: colCount }).map((_, i) => ({
+        id: this.builderState.generateId(),
+        type: 'container',
+        label: `Colonne ${i + 1}`,
+        data: {},
+        styles: {
+          desktop: {
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '10px',
+            minHeight: '80px',
+            height: '100%',
+            border: '1px dashed #e5e7eb'
+          }
+        },
+        children: []
+      }));
+
+      // Set the columns as children of the grid/container
+      this.builderState.updateBlock(id, { children: columns });
+
+      this.builderState.pendingGridId.set(null);
+    }
   }
 
-  onDrop(event: CdkDragDrop<Block[], any>) {
+  private handleDrop(event: CdkDragDrop<any, any>, targetId: string) {
     const dragData = event.item.data;
-    console.log('Drop event:', { dragData, previousIndex: event.previousIndex, currentIndex: event.currentIndex });
-    
+    console.log('handleDrop:', { targetId, dragData, index: event.currentIndex });
+
     if (this.isWidgetItem(dragData)) {
-      // New widget from sidebar
       const widget = dragData as WidgetItem;
       const newBlock = createBlockFromWidget(widget, this.builderState.generateId());
-      console.log('Creating new block:', newBlock);
-      this.builderState.addBlock(newBlock, 'root', event.currentIndex);
-      console.log('Blocks after add:', JSON.stringify(this.builderState.blocks(), null, 2));
+      console.log('Adding new widget:', newBlock.type, 'to:', targetId);
+      this.builderState.addBlock(newBlock, targetId, event.currentIndex);
+
+      // If it's a grid or container, open configuration
+      if (newBlock.type === 'grid' || newBlock.type === 'container') {
+        this.builderState.pendingGridId.set(newBlock.id);
+      }
     } else if (this.isBlock(dragData)) {
-      // Reordering existing block
-      if (event.previousIndex !== event.currentIndex) {
-        const blocks = this.builderState.blocks();
-        const root = blocks.find(b => b.id === 'root');
-        if (root?.children) {
-          const newChildren = [...root.children];
-          moveItemInArray(newChildren, event.previousIndex, event.currentIndex);
-          this.builderState.updateBlock('root', { children: newChildren });
+      if (event.previousContainer === event.container) {
+        if (event.previousIndex !== event.currentIndex) {
+          this.builderState.reorderChildren(targetId, event.previousIndex, event.currentIndex);
         }
+      } else {
+        const block = dragData as Block;
+        this.builderState.moveBlockBetweenContainers(block.id, targetId, event.currentIndex);
       }
     }
   }
@@ -443,6 +290,6 @@ export class EditorCanvasComponent {
   }
 
   private isBlock(data: any): data is Block {
-    return data && 'id' in data && 'type' in data;
+    return data && 'id' in data && 'type' in data && !('blockType' in data);
   }
 }

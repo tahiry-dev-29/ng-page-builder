@@ -29,6 +29,9 @@ export class BuilderStateService {
   // Device preview
   activeDevice = signal<DeviceType>('desktop');
   
+  // Pending Grid Configuration
+  pendingGridId = signal<string | null>(null);
+  
   // Undo/Redo
   private history = signal<Block[][]>([]);
   private historyIndex = signal(-1);
@@ -42,6 +45,23 @@ export class BuilderStateService {
 
   canUndo = computed(() => this.historyIndex() > 0);
   canRedo = computed(() => this.historyIndex() < this.history().length - 1);
+
+  // Track all drop list IDs for drag and drop connections
+  allDropListIds = computed(() => {
+    const ids = ['root-list'];
+    const traverse = (blocks: Block[]) => {
+      for (const block of blocks) {
+        if (block.type === 'container' || block.type === 'grid') {
+          ids.push(`container-${block.id}`);
+        }
+        if (block.children) {
+          traverse(block.children);
+        }
+      }
+    };
+    traverse(this.blocks());
+    return ids;
+  });
 
   constructor() {
     // Debounced auto-save
@@ -204,6 +224,39 @@ export class BuilderStateService {
     
     this.saveHistory();
     this.blocks.update(blocks => this.deleteBlockFromTree(blocks, blockId));
+    this.blocks.update(blocks => this.addBlockToParent(blocks, block, newParentId, newIndex));
+  }
+
+  // Reorder children within a parent
+  reorderChildren(parentId: string, previousIndex: number, currentIndex: number): void {
+    const parent = this.findBlockById(this.blocks(), parentId);
+    if (!parent?.children) return;
+
+    this.saveHistory();
+    const newChildren = [...parent.children];
+    const [moved] = newChildren.splice(previousIndex, 1);
+    newChildren.splice(currentIndex, 0, moved);
+    this.blocks.update(blocks => this.updateBlockInTree(blocks, parentId, { children: newChildren }));
+  }
+
+  // Force immediate save
+  forceSave(): void {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    this.saveToStorage(this.blocks());
+    console.log('Page saved!');
+  }
+
+  // Move block from one container to another
+  moveBlockBetweenContainers(blockId: string, newParentId: string, newIndex: number): void {
+    const block = this.findBlockById(this.blocks(), blockId);
+    if (!block) return;
+
+    this.saveHistory();
+    // First remove from old location
+    this.blocks.update(blocks => this.deleteBlockFromTree(blocks, blockId));
+    // Then add to new location
     this.blocks.update(blocks => this.addBlockToParent(blocks, block, newParentId, newIndex));
   }
 

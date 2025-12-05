@@ -69,7 +69,8 @@ export interface IconListContent {
     }
 
     .icon {
-      font-size: 18px;
+      font-size: var(--icon-size, 18px);
+      color: var(--icon-color, currentColor);
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush

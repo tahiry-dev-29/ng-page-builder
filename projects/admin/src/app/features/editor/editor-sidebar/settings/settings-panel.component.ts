@@ -67,7 +67,7 @@ import { StyleSettingsComponent } from './tabs/style-settings.component';
         @if (activeTab() === 'layout') {
           <app-layout-settings [widgetType]="widgetType()" />
         } @else if (activeTab() === 'style') {
-          <app-style-settings />
+          <app-style-settings [widgetType]="widgetType()" />
         } @else if (activeTab() === 'advanced') {
           <app-advanced-settings [widgetType]="widgetType()" />
         }

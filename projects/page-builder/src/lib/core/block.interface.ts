@@ -132,18 +132,25 @@ export interface DividerContent {
   color: string;
 }
 
-export type BlockType = 
-  | 'container' 
-  | 'grid' 
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
+
+export type BlockType =
+  | 'container'
+  | 'grid'
   | 'heading'
-  | 'text' 
-  | 'image' 
-  | 'button' 
-  | 'spacer' 
+  | 'text'
+  | 'image'
+  | 'button'
+  | 'spacer'
   | 'divider'
-  | 'video' 
+  | 'video'
   | 'icon-list'
   | 'map';
+
+export interface BlockDropEvent {
+  event: CdkDragDrop<Block[], any>;
+  targetId: string;
+}
 
 /**
  * Core Block interface - matches Elementor structure
